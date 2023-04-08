@@ -1,23 +1,19 @@
-#include <stdio.h>
-#include <string.h>
-#include<dirent.h>
-#include<sys/stat.h>
-
-int listDir(char *path, int has_perm_execute,int greater_than_size ,int given_size){
+void listDirRec(char *path, int has_perm_execute,int greater_than_size, int given_size, int iteratie){
     DIR *dir=NULL;
     struct dirent *entry=NULL;
     dir=opendir(path);
     if(dir==NULL){
+        if(iteratie==1)
         perror("ERROR\ninvalid directory path");
-        return -1;
+        return;
     }
-    printf("SUCCESS");
-
-    while((entry=readdir(dir))!=NULL){
-        if((strcmp(entry->d_name,".")!=0 )&& (strcmp(entry->d_name,"..")!=0 )){
-            char ppath[500];
+    if(iteratie==1)
+        printf("SUCCESS");
+    while((entry = readdir(dir)) != NULL) {
+        if(strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) {
             struct stat filestat;
-            snprintf(ppath,500,"%s/%s",path,entry->d_name);
+            char ppath[500];
+            snprintf(ppath, 500, "%s/%s", path, entry->d_name);
             if (stat(ppath, &filestat) == -1) {
                 continue;
             }
@@ -31,113 +27,13 @@ int listDir(char *path, int has_perm_execute,int greater_than_size ,int given_si
                     printf("\n%s", ppath);
                 }
             }
-            else{
+            else if(S_ISDIR(filestat.st_mode)) {
+                listDirRec(ppath,has_perm_execute,greater_than_size,given_size,iteratie+1);
+            } else{
                 printf("\n%s", ppath);
-            }
+            }    
+
         }
     }
     closedir(dir);
-    return 0;
-}
-
-void listDirRec(char *path, int has_perm_execute,int greater_than_size, int given_size){
-    DIR *dir=NULL;
-    struct dirent *entry=NULL;
-    dir=opendir(path);
-    if(dir==NULL){
-        perror("ERROR\ninvalid directory path");
-        return;
-    }
-    printf("SUCCESS");
-    while((entry = readdir(dir)) != NULL) {
-        if(strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) {
-            struct stat filestat;
-            char ppath[500];
-            snprintf(ppath, 500, "%s/%s", path, entry->d_name);
-            if (stat(ppath, &filestat) == -1) {
-                continue;
-            }
-            printf("\n%s", ppath);
-            if(S_ISDIR(filestat.st_mode)) {
-                listDirRec(ppath,has_perm_execute,greater_than_size,given_size);
-            }                   
-        }
-    }
-    closedir(dir);
-}
-
-void decide(int list, int recursive, int greater_than_size, int has_perm_execute, char* dir_path, int given_size){
-    if(list == 1){
-        if(recursive==1){
-            if(greater_than_size==1){
-                listDirRec(dir_path,has_perm_execute,greater_than_size,given_size);
-            }else{
-                listDirRec(dir_path,has_perm_execute,greater_than_size,given_size);
-            }
-        } else{
-            if(greater_than_size==1){
-                listDir(dir_path,has_perm_execute,greater_than_size,given_size);
-            }else{
-                listDir(dir_path,has_perm_execute,greater_than_size,given_size);
-            }
-        }
-    } else{
-        return;
-    }
-}
-
-int main(int argc, char **argv){
-    if(argc >= 2){
-        if(strcmp(argv[1], "variant") == 0){
-            printf("36931\n");
-        }
-        else if(strcmp(argv[1], "parse") == 0){
-
-        }
-        else if(strcmp(argv[1], "extract") == 0){
-
-        }
-        else if(strcmp(argv[1], "findall") == 0){
-        
-        }
-        else{
-            int list=0;
-            int recursive=0;
-            int greater_than_size=0;
-            int has_perm_execute=0;
-
-            char* dir_path=NULL;
-            int given_size=0;
-
-            for(int i=1;i<argc;i++){
-                if(strcmp(argv[i], "list")==0){
-                    list=1;
-                }
-                else if(strcmp(argv[i], "recursive")==0){
-                    recursive=1;
-                }
-                else if(strcmp(argv[i], "has_perm_execute")==0){
-                    has_perm_execute=1;
-                }
-                else{
-                    char* possible_path=argv[i];
-                    char* path_prefix="path=";
-                    size_t path_prefix_len=strlen(path_prefix);
-                    if(strncmp(possible_path,path_prefix,path_prefix_len)==0){
-                        dir_path=possible_path+path_prefix_len;
-                    }
-                    char* sz_prefix="size_greater=";
-                    size_t sz_prefix_len=strlen(sz_prefix);
-                    if(strncmp(possible_path,sz_prefix,sz_prefix_len)==0){
-                        char* gr_than=possible_path+sz_prefix_len;
-                        sscanf(gr_than,"%d",&given_size);
-                        greater_than_size=1;
-                    }
-                }
-            }
-            decide(list,recursive,greater_than_size,has_perm_execute,dir_path, given_size);
-        }
-
-    }
-    return 0;
 }
