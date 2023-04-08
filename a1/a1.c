@@ -116,6 +116,28 @@ void parse_file(char* path){
         }
         short headerSize=*((short*)header_size);
         lseek(fd,-headerSize,SEEK_END);
+        char version[2];
+        ssize_t ver_read=read(fd,version,2);
+        if(ver_read == -1){
+            return;
+        }
+        short versionf=*((short*)version);
+        if(versionf<24 || versionf >68){
+            printf("ERROR\nwrong version");
+            return;
+        }
+        else{
+            char no_sections;
+            ssize_t nosect_read=read(fd,&no_sections,1);
+            if(nosect_read == -1){
+                return;
+            }
+            short no_of_sect=(short)no_sections;
+            if(no_of_sect<8 || no_of_sect>15){
+                printf("ERROR\nwrong sect_nr");
+                return;
+            }
+        }
     }
     else{
         printf("ERROR\nwrong magic");
