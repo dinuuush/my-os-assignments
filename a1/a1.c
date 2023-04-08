@@ -115,10 +115,7 @@ void parse_file(char* path){
             return;
         }
         short headerSize=*((short*)header_size);
-        if(headerSize<24 || headerSize >68){
-            printf("ERROR\nwrong version");
-            return;
-        }
+        lseek(fd,-headerSize,SEEK_END);
     }
     else{
         printf("ERROR\nwrong magic");
