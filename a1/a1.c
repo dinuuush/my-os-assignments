@@ -108,12 +108,22 @@ void parse_file(char* path){
         return;
     }
     if(magic=='X'){
-        
+        lseek(fd,-3,SEEK_END);
+        char header_size[2];
+        ssize_t h_read=read(fd,header_size,2);
+        if(h_read == -1){
+            return;
+        }
+        short headerSize=*((short*)header_size);
+        if(headerSize<24 || headerSize >68){
+            printf("ERROR\nwrong version");
+            return;
+        }
     }
     else{
         printf("ERROR\nwrong magic");
+        return;
     }
-    //printf("Last byte: %c",buffer[0]);
     if(close(fd)==-1){
         return;
     }
