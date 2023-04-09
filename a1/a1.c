@@ -4,21 +4,14 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include<stdlib.h>
 
-typedef struct _section_header{
+typedef struct section{
     char sect_name[12];
     char sect_type;
     int sect_offset;
     int sect_size;
 } section_header;
-
-typedef struct _header{
-    short version;
-    char no_of_sections;
-    struct section_header* sections;
-    short header_size;
-    char magic;
-} struct_header;
 
 int listDir(char *path, int has_perm_execute,int greater_than_size ,int given_size){
     DIR *dir=NULL;
@@ -101,46 +94,88 @@ void parse_file(char* path){
     if(fd==-1){
         return;
     }
-    lseek(fd,-1,SEEK_END);
     char magic;
-    ssize_t did_read=read(fd,&magic,1);
-    if(did_read == -1){
+    lseek(fd,-1,SEEK_END);
+    ssize_t magic_read=read(fd,&magic,1);
+    if(magic_read == -1){
         return;
     }
     if(magic=='X'){
         lseek(fd,-3,SEEK_END);
-        char header_size[2];
-        ssize_t h_read=read(fd,header_size,2);
-        if(h_read == -1){
+        short header_size;
+        ssize_t hsize_read=read(fd,&header_size,2);
+        if(hsize_read == -1){
+            close(fd);
             return;
         }
-        short headerSize=*((short*)header_size);
-        lseek(fd,-headerSize,SEEK_END);
-        char version[2];
-        ssize_t ver_read=read(fd,version,2);
-        if(ver_read == -1){
+        lseek(fd,-header_size,SEEK_END);
+        short version;
+        ssize_t version_read=read(fd,&version,2);
+        if(version_read == -1){
+            close(fd);
             return;
         }
-        short versionf=*((short*)version);
-        if(versionf<24 || versionf >68){
+        if(version<24 || version >68){
             printf("ERROR\nwrong version");
+            close(fd);
             return;
         }
         else{
-            char no_sections;
-            ssize_t nosect_read=read(fd,&no_sections,1);
-            if(nosect_read == -1){
+            char no_of_sections;
+            ssize_t no_sect_read=read(fd,&no_of_sections,1);
+            if(no_sect_read == -1){
+                close(fd);
                 return;
             }
-            short no_of_sect=(short)no_sections;
-            if(no_of_sect<8 || no_of_sect>15){
+            if(no_of_sections<8 || no_of_sections>15){
                 printf("ERROR\nwrong sect_nr");
+                close(fd);
                 return;
+            }
+            else{
+                section_header* sections=(section_header*)calloc(no_of_sections,sizeof(section_header));
+                for(int i=0;i<no_of_sections;i++){
+                    ssize_t sect_read=read(fd,sections[i].sect_name,11);
+                    if(sect_read==-1){
+                        close(fd);
+                        return;
+                    }
+                    sect_read=read(fd,&sections[i].sect_type,1);
+                    if(sect_read==-1){
+                        close(fd);
+                        return;
+                    }
+                    if(sections[i].sect_type<64 || sections[i].sect_type>65){
+                        printf("ERROR\nwrong sect_types");
+                        close(fd);
+                        free(sections);
+                        return;
+                    }
+                    sect_read=read(fd,&sections[i].sect_offset,4);
+                    if(sect_read==-1){
+                        close(fd);
+                        return;
+                    }
+                    sect_read=read(fd,&sections[i].sect_size,4);
+                    if(sect_read==-1){
+                        close(fd);
+                        return;
+                    }
+                }
+                printf("SUCCESS\n");
+                printf("version=%d\n",version);
+                int aux=(int)no_of_sections;
+                printf("nr_sections=%d",aux);
+                for(int i=0;i<aux;i++){
+                    printf("\nsection%d: %s %d %d",i+1,sections[i].sect_name,sections[i].sect_type,sections[i].sect_size);
+                }
+                free(sections);
             }
         }
     }
     else{
         printf("ERROR\nwrong magic");
+        close(fd);
         return;
     }
     if(close(fd)==-1){
