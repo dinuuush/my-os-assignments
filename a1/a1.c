@@ -138,11 +138,13 @@ void parse_file(char* path){
                     ssize_t sect_read=read(fd,sections[i].sect_name,11);
                     if(sect_read==-1){
                         close(fd);
+                        free(sections);
                         return;
                     }
                     sect_read=read(fd,&sections[i].sect_type,1);
                     if(sect_read==-1){
                         close(fd);
+                        free(sections);
                         return;
                     }
                     if(sections[i].sect_type<64 || sections[i].sect_type>65){
@@ -154,11 +156,13 @@ void parse_file(char* path){
                     sect_read=read(fd,&sections[i].sect_offset,4);
                     if(sect_read==-1){
                         close(fd);
+                        free(sections);
                         return;
                     }
                     sect_read=read(fd,&sections[i].sect_size,4);
                     if(sect_read==-1){
                         close(fd);
+                        free(sections);
                         return;
                     }
                 }
