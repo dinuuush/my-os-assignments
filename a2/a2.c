@@ -126,5 +126,8 @@ int main(){
     waitpid(pidP6, NULL, 0);
     //inform the tester about main process' termination
     info(END, 1, 0);
+    free(p2_threads);
+    free(p6_threads);
+    free(p7_threads);
     return 0;
 }
