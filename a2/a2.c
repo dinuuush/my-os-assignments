@@ -31,7 +31,9 @@ void* thread_function(void* arg){
 }
 
 int main(){
+    pthread_t* p2_threads = (pthread_t*)malloc(sizeof(pthread_t)*45);
     pthread_t* p7_threads = (pthread_t*)malloc(sizeof(pthread_t)*5);
+    pthread_t* p6_threads = (pthread_t*)malloc(sizeof(pthread_t)*5);
     //tester initialization
     //only one time in the main process
     init();
@@ -45,6 +47,15 @@ int main(){
 
     if(pidP2 == 0){ // P2 process
         info(BEGIN, 2, 0);
+        for(int i=1; i<=44; i++){
+            struct ThreadArgs* info = (struct ThreadArgs*)malloc(sizeof(struct ThreadArgs));
+            info->processNr = 2;
+            info->threadNr = i;
+            pthread_create(&p2_threads[i], NULL, thread_function, (void*)info);
+        }
+        for(int i=1; i<=44; i++){
+            pthread_join(p2_threads[i], NULL);
+        }
         int pidP5 = fork();
         if(pidP5 == 0){ // P5 process
             info(BEGIN, 5, 0);
@@ -80,6 +91,15 @@ int main(){
     int pidP6 = fork();
     if(pidP6 == 0){ // P6 process
         info(BEGIN, 6, 0);
+        for(int i=1; i<=4; i++){
+            struct ThreadArgs* info = (struct ThreadArgs*)malloc(sizeof(struct ThreadArgs));
+            info->processNr = 6;
+            info->threadNr = i;
+            pthread_create(&p6_threads[i], NULL, thread_function, (void*)info);
+        }
+        for(int i=1; i<=4; i++){
+            pthread_join(p6_threads[i], NULL);
+        }
         int pidP7 = fork();
         if(pidP7 == 0){ // P7 process
             info(BEGIN, 7, 0);
