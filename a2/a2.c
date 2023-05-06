@@ -7,7 +7,31 @@
 #include <string.h>
 #include <pthread.h>
 
+struct ThreadArgs {
+    int processNr;
+    int threadNr;
+};
+
+void* thread_function(void* arg){
+    struct ThreadArgs* args = (struct ThreadArgs*)arg;
+    int processNr = args->processNr;
+    int threadNr = args->threadNr;
+    free(arg);
+
+    // possible thread’ actions
+
+    // inform the tester about thread start
+    info(BEGIN, processNr, threadNr);
+
+    // other possible thread’ actions
+
+    // inform the tester about thread termination
+    info(END, processNr, threadNr);
+    return NULL;
+}
+
 int main(){
+    pthread_t* p7_threads = (pthread_t*)malloc(sizeof(pthread_t)*5);
     //tester initialization
     //only one time in the main process
     init();
@@ -59,6 +83,15 @@ int main(){
         int pidP7 = fork();
         if(pidP7 == 0){ // P7 process
             info(BEGIN, 7, 0);
+            for(int i=1; i<=4; i++){
+                struct ThreadArgs* info = (struct ThreadArgs*)malloc(sizeof(struct ThreadArgs));
+                info->processNr = 7;
+                info->threadNr = i;
+                pthread_create(&p7_threads[i], NULL, thread_function, (void*)info);
+            }
+            for(int i=1; i<=4; i++){
+                pthread_join(p7_threads[i], NULL);
+            }
             info(END, 7, 0);
             exit(0);
         }
