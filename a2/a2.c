@@ -6,11 +6,16 @@
 #include "a2_helper.h"
 #include <string.h>
 #include <pthread.h>
+#include <semaphore.h>
 
 struct ThreadArgs {
     int processNr;
     int threadNr;
 };
+
+sem_t semafor7_begin;
+sem_t semafor7_end;
+sem_t semafor6;
 
 void* thread_function(void* arg){
     struct ThreadArgs* args = (struct ThreadArgs*)arg;
@@ -21,12 +26,40 @@ void* thread_function(void* arg){
     // possible thread’ actions
 
     // inform the tester about thread start
+
+    if(processNr == 7 && threadNr == 1){
+        info(BEGIN, processNr, threadNr);
+        sem_post(&semafor7_begin);
+    }
+    else if(processNr == 7 && threadNr == 3){
+        sem_wait(&semafor7_begin);
+        info(BEGIN, processNr, threadNr);
+    }else if(processNr == 2 ){
+        sem_wait(&semafor6);
+        info(BEGIN, processNr, threadNr);
+    }else{
     info(BEGIN, processNr, threadNr);
+    }
 
     // other possible thread’ actions
 
+    if(processNr == 7 && threadNr == 1){
+        sem_wait(&semafor7_end);
+        info(END, processNr, threadNr);
+        return NULL;
+    }
+    
+
     // inform the tester about thread termination
     info(END, processNr, threadNr);
+
+    if(processNr == 7 && threadNr == 3){
+        sem_post(&semafor7_end);
+    }
+    if(processNr == 2){
+        sem_post(&semafor6);
+    }
+
     return NULL;
 }
 
@@ -47,6 +80,7 @@ int main(){
 
     if(pidP2 == 0){ // P2 process
         info(BEGIN, 2, 0);
+        sem_init(&semafor6, 0, 6);
         for(int i=1; i<=44; i++){
             struct ThreadArgs* info = (struct ThreadArgs*)malloc(sizeof(struct ThreadArgs));
             info->processNr = 2;
@@ -70,6 +104,7 @@ int main(){
         }
         waitpid(pidP5, NULL, 0);
         waitpid(pidP8, NULL, 0);
+        sem_destroy(&semafor6);
         info(END, 2, 0);
         exit(0);
     }
@@ -103,6 +138,8 @@ int main(){
         int pidP7 = fork();
         if(pidP7 == 0){ // P7 process
             info(BEGIN, 7, 0);
+            sem_init(&semafor7_begin, 0, 0);
+            sem_init(&semafor7_end, 0, 0);
             for(int i=1; i<=4; i++){
                 struct ThreadArgs* info = (struct ThreadArgs*)malloc(sizeof(struct ThreadArgs));
                 info->processNr = 7;
@@ -112,6 +149,8 @@ int main(){
             for(int i=1; i<=4; i++){
                 pthread_join(p7_threads[i], NULL);
             }
+            sem_destroy(&semafor7_begin);
+            sem_destroy(&semafor7_end);
             info(END, 7, 0);
             exit(0);
         }
